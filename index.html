@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренировочный тест (28 вопросов)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7fc; padding: 20px; max-width: 900px; margin: 0 auto; }
+        .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .question-block { background: #f9f9fb; padding: 20px; margin-bottom: 25px; border-radius: 12px; border-left: 5px solid #2a7de1; }
+        .question-text { font-weight: 600; font-size: 18px; margin-bottom: 12px; }
+        .option { display: block; margin: 8px 0; padding: 10px; background: white; border-radius: 8px; border: 1px solid #ddd; cursor: pointer; transition: 0.2s; }
+        .option:hover { background: #eef3fa; border-color: #2a7de1; }
+        .option input { margin-right: 12px; transform: scale(1.1); }
+        .btn { background: #2a7de1; color: white; border: none; padding: 14px 30px; border-radius: 10px; font-size: 18px; cursor: pointer; margin: 10px 5px 0 0; }
+        .btn:hover { background: #1a5cb0; }
+        .btn-danger { background: #d9534f; }
+        .btn-danger:hover { background: #b52b27; }
+        .result { margin-top: 20px; padding: 20px; border-radius: 12px; font-size: 20px; font-weight: bold; display: none; }
+        .result.bad { background: #ffebee; color: #c62828; }
+        .result.good { background: #e8f5e9; color: #2e7d32; }
+        .stats { margin-top: 15px; font-size: 16px; color: #555; }
+        .mistake { background: #fff3cd; border-left-color: #ffc107; }
+        .correct-answer { color: #2e7d32; font-weight: bold; margin-top: 5px; }
+        .tag { display: inline-block; background: #e0e0e0; padding: 2px 12px; border-radius: 20px; font-size: 14px; margin-bottom: 10px; }
+        .check-label { font-weight: normal; }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <h1>📚 Тренировка: 28 вопросов</h1>
+    <p><span class="tag">🔥 Перемешиваются каждый раз</span> <span class="tag">🎯 Отвечай и жми "Проверить"</span></p>
+    <button class="btn" onclick="shuffleAndRender()">🔀 Перемешать вопросы заново</button>
+    <button class="btn btn-danger" onclick="resetAll()">🔄 Сбросить всё</button>
+    <div id="questionsContainer"></div>
+    <button class="btn" onclick="checkAnswers()" style="width:100%; margin-top:20px;">✅ Проверить все ответы</button>
+    <div id="resultArea" class="result"></div>
+    <div id="statsArea" class="stats"></div>
+</div>
+<script>
+    // --------------------------------------------------------------
+    // БАЗА ДАННЫХ: 28 вопросов (ПОЛНОСТЬЮ ПРОВЕРЕНО)
+    // --------------------------------------------------------------
+    const fullQuestions = [
+        {
+            q: 'Какие из указанных типов трансляций NAT позволяют внешним пользователям иметь постоянный доступ к серверу во внутреннем сегменте корпоративной сети?',
+            options: ['Статический NAT', 'Динамический NAT', 'NAT Server/Port Forwarding', 'Easy IP'],
+            correct: [0, 2]
+        },
+        {
+            q: 'Что произойдет, если адрес шлюза по умолчанию неправильно настроен на узле?',
+            options: ['узел должен будет использовать ARP для определения правильного адреса по умолчанию', 'коммутатор не будет пересылать кадры, отправленные этим узлом', 'узел не сможет взаимодействовать с другими узлами в локальной сети', 'узел не сможет взаимодействовать с узлами в других сетях'],
+            correct: [3]
+        },
+        {
+            q: 'Какие два утверждения верны в отношении маршрутизации между сетями VLAN на основе виртуальных интерфейсов VLAN (SVI) на L3-коммутаторе?',
+            options: ['виртуальные интерфейсы VLAN поддерживают субинтерфейсы', 'виртуальные интерфейсы VLAN могут быть агрегированы', 'при использовании указанного подхода пересылка пакетов происходит быстрее (аппаратно)', 'отсутствует необходимость в подключении внешнего маршрутизатора', 'виртуальные интерфейсы устраняют необходимость в использовании адреса шлюза по умолчанию на узлах сети'],
+            correct: [2, 3]
+        },
+        {
+            q: 'Какое утверждение описывает недостаток использования субинтерфейсов маршрутизатора для маршрутизации между VLAN?',
+            options: ['Маршрутизируемый трафик должен конкурировать за полосу пропускания на одном физическом интерфейсе маршрутизатора', 'Весь нетегированный трафик отбрасывается', 'Количество доступных субинтерфейсов, как правило, не позволяет подключить все сети VLAN', 'Это дороже, чем использование отдельных физических интерфейсов маршрутизатора'],
+            correct: [0]
+        },
+        {
+            q: 'Какие две функции выполняют устройства выходной зоны (распределительного уровня) в крупной кампусной сети?',
+            options: ['Обеспечение подключений к внешним сетям', 'Обеспечение подключений оконечных устройств к сетевой инфраструктуре', 'Обеспечение высокоскоростных магистральных соединений между сегментами сети', 'Обеспечение питания через Ethernet (PoE) на устройства', 'Обеспечение безопасности сетевого взаимодействия'],
+            correct: [0, 4]
+        },
+        {
+            q: 'Сетевая инфраструктура содержит несколько коммутаторов, при этом определено несколько сетей VLAN. Что происходит, когда устройство в сети VLAN 20 отправляет широковещательный кадр Ethernet?',
+            options: ['Кадр получат все устройства во всех VLAN', 'Кадр получат только устройства, подключенные к локальному коммутатору', 'Кадр получат все устройства в сети VLAN 20', 'Кадр получат все устройства во всех VLAN, только если выполняется маршрутизация между сетями VLAN'],
+            correct: [2]
+        },
+        {
+            q: 'Какова функция протокола STP (Spanning Tree Protocol) в масштабируемой сети?',
+            options: ['Он позволяет уменьшить размеры домена отказа, чтобы ограничить негативное влияние отказов на работу всей сети', 'Он позволяет объединить несколько физических каналов как один логический канал для увеличения пропускной способности', 'Он позволяет отключить избыточные каналы связи для устранения петель коммутации', 'Он позволяет обеспечить защиту периметра сети от вредоносных воздействий'],
+            correct: [2]
+        },
+        {
+            q: 'Какой тип пакетов OSPF используется маршрутизатором для обнаружения соседних маршрутизаторов и установления смежности (соседства)?',
+            options: ['LSU', 'HELLO', 'DBD', 'LSR'],
+            correct: [1]
+        },
+        {
+            q: 'Какие утверждения являются верными для агрегирования каналов (EtherChannel) в режиме LACP?',
+            options: ['Количество активных интерфейсов-участников в режиме LACP может быть сконфигурировано явным образом', 'Все интерфейсы-участники агрегированного канала в режиме LACP являются активными', 'В режиме LACP устройства на двух сторонах одного канала отправляют друг другу сообщения LACP', 'В режиме LACP балансировка нагрузки по каналам-участникам при передаче данных через агрегированный интерфейс не поддерживается'],
+            correct: [0, 2]
+        },
+        {
+            q: 'Какова цель установления базового уровня (baseline) производительности сети?',
+            options: ['Проверить конфигурацию безопасности сетевых устройств', 'Определить среднестатистическую производительность сетевого взаимодействия', 'Создать точку отсчета для будущих измерений в сети', 'Оптимизировать производительность сетевых устройств'],
+            correct: [2]
+        },
+        {
+            q: 'Какой маршрут будет использоваться для пересылки пакета с IP-адресом источника 192.168.10.1 и IP-адресом назначения 10.1.1.1? (Формат: Network/Prefix, Type, [Preference/Cost], Interface)',
+            options: ['192.168.10.0/30, Direct, [0/0], GigabitEthernet0/1', '10.1.1.0/24, OSPF, [10/2], GigabitEthernet0/2', '0.0.0.0/0, Static, [1/0], GigabitEthernet0/3', '10.1.0.0/16, Static, [5/0], GigabitEthernet0/0'],
+            correct: [1]
+        },
+        {
+            q: 'В каком состоянии OSPF проводятся выборы DR/BDR?',
+            options: ['ExStart', 'Init', 'Two-Way', 'Exchange'],
+            correct: [2]
+        },
+        {
+            q: 'При получении ARP-запроса узел может добавить новое сопоставление в локальную ARP-таблицу. Какие поля запроса при этом используются?',
+            options: ['MAC-адрес целевого узла в заголовке ARP-запроса', 'IP-адрес источника запроса в заголовке ARP-запроса', 'IP-адрес целевого узла в заголовке ARP-запроса', 'MAC-адрес источника запроса в заголовке ARP-запроса'],
+            correct: [1, 3]
+        },
+        {
+            q: 'Какой тип пакета OSPF используется маршрутизаторами для синхронизации LSDB двух устройств (сверки удаленной базы данных с локальной)?',
+            options: ['DD (Database Description)', 'LSU', 'LSR', 'LSA'],
+            correct: [0]
+        },
+        {
+            q: 'Укажите наиболее точный суммарный маршрут для подсетей: 192.168.1.0/27, 192.168.1.32/28, 192.168.1.48/28',
+            options: ['192.168.1.0/24', '192.168.1.0/25', '192.168.1.0/26', '192.168.1.0/27'],
+            correct: [2]
+        },
+        {
+            q: 'Какое сообщение DHCPv4 отправит клиент, чтобы принять IPv4-адрес, предлагаемый DHCP-сервером?',
+            options: ['широковещательное DHCPACK', 'широковещательное DHCPREQUEST', 'одноадресное DHCPACK', 'одноадресное DHCPREQUEST'],
+            correct: [1]
+        },
+        {
+            q: 'Какой IP-адрес должен быть использован в качестве адреса шлюза по умолчанию на устройствах H1 и H2 при использовании в сети протокола VRRP?',
+            options: ['192.168.1.1', '192.168.1.2', '192.168.1.3', '192.168.1.254'],
+            correct: [2]
+        },
+        {
+            q: 'Сколько действительных адресов узлов доступно в подсети IPv4 с маской 255.255.255.224?',
+            options: ['14', '30', '32', '224'],
+            correct: [1]
+        },
+        {
+            q: 'Укажите сетевой протокол, который может быть использован для централизованного сбора сообщений об ошибках, возникающих на сетевых устройствах?',
+            options: ['VRRP', 'LLDP', 'SLAAC', 'Syslog'],
+            correct: [3]
+        },
+        {
+            q: 'Сетевой администратор хочет подключить коммутируемую сеть к маршрутизатору для маршрутизации пакетов между сетями VLAN (Router-on-a-stick). Какие шаги ему необходимо предпринять?',
+            options: ['Создать отдельное физическое подключение к маршрутизатору для каждой сети VLAN', 'Создать одно общее физическое подключение к маршрутизатору для всех сетей VLAN', 'Создать и настроить субинтерфейсы 802.1Q на коммутаторе', 'Настроить порт коммутатора, подключенный к маршрутизатору, как магистральный порт (trunk)', 'Создать и настроить субинтерфейсы 802.1Q на маршрутизаторе'],
+            correct: [3, 4]
+        },
+        {
+            q: 'В чем заключаются преимущества агрегирования каналов (EtherChannel)?',
+            options: ['Повышение отказоустойчивости соединений', 'Повышение производительности соединений', 'Упрощение анализа сетевого трафика', 'Обеспечение балансировки нагрузки'],
+            correct: [0, 1, 3]
+        },
+        {
+            q: 'Укажите открытый протокол канального уровня, позволяющий сетевым устройствам определить идентификатор и параметры устройства другим подключенным сетевым устройствам?',
+            options: ['CDP', 'LLDP', 'NTP', 'SNMP'],
+            correct: [1]
+        },
+        {
+            q: 'Пользователь сообщает, что при вводе URL-адреса корпоративного веб-сайта в браузере появляется сообщение об ошибке. Специалист просит пользователя отправить ping по IP-адресу веб-сервера. Какой метод устранения неполадок использует технический специалист?',
+            options: ['Метод "Сверху вниз"', 'Метод "Снизу вверх"', 'Метод замены', 'Метод "Разделяй и властвуй"'],
+            correct: [3]
+        },
+        {
+            q: 'Какова функция элемента MIB (Management Information Base) как части системы управления сетью (SNMP)?',
+            options: ['Сбор данных от SNMP-агентов', 'Отправка и получение информации об управлении сетью', 'Изменение конфигурации агентов SNMP', 'Хранение данных об устройстве'],
+            correct: [3]
+        },
+        {
+            q: 'Какой протокол позволяет синхронизировать время на устройстве с общедоступным сервером в Интернете?',
+            options: ['MPLS', 'LLDP', 'NTP', 'TFTP'],
+            correct: [2]
+        },
+        {
+            q: 'Укажите частные IPv4 адреса согласно RFC 1918:',
+            options: ['172.18.11.221', '198.16.11.2', '192.168.14.5', '10.0.121.15', '209.14.17.116'],
+            correct: [0, 2, 3]
+        },
+        {
+            q: 'Какие два метода помогают предотвратить сбои в работе сетевых служб?',
+            options: ['Использование VLAN для сегментации сетевого трафика', 'Изменение протоколов маршрутизации через регулярные промежутки времени', 'Установка дублирующего оборудования для обеспечения отказоустойчивости', 'Использование резервных соединений для обеспечения альтернативных физических путей', 'Удаление коммутаторов, вызывающих петли'],
+            correct: [2, 3]
+        },
+        {
+            q: 'Какие два поля включены в заголовок TCP, но не включены в заголовок UDP?',
+            options: ['Порт источника (Source Port)', 'Порт назначения (Destination Port)', 'Контрольная сумма (Checksum)', 'Размер окна (Window)', 'Порядковый номер (Sequence Number)'],
+            correct: [3, 4]
+        }
+    ];
+
+    let currentQuestions = [];
+
+    function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function shuffleAndRender() {
+        currentQuestions = shuffleArray([...fullQuestions]);
+        renderQuestions();
+        document.getElementById('resultArea').style.display = 'none';
+        document.getElementById('resultArea').className = 'result';
+        document.getElementById('statsArea').innerHTML = '';
+    }
+
+    function renderQuestions() {
+        const container = document.getElementById('questionsContainer');
+        container.innerHTML = '';
+        currentQuestions.forEach((item, idx) => {
+            const block = document.createElement('div');
+            block.className = 'question-block';
+            block.id = `qblock-${idx}`;
+
+            let html = `<div class="question-text">${idx+1}. ${item.q}</div>`;
+            item.options.forEach((opt, oi) => {
+                html += `<label class="option">
+                    <input type="checkbox" name="q${idx}" value="${oi}" data-q="${idx}">
+                    ${opt}
+                </label>`;
+            });
+            html += `<div id="feedback-${idx}" style="margin-top:8px;"></div>`;
+            block.innerHTML = html;
+            container.appendChild(block);
+        });
+    }
+
+    function checkAnswers() {
+        let total = currentQuestions.length;
+        let correctCount = 0;
+        let wrongIndices = [];
+
+        currentQuestions.forEach((item, idx) => {
+            const checkboxes = document.querySelectorAll(`input[name="q${idx}"]:checked`);
+            const selected = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort();
+            const correct = [...item.correct].sort();
+            const isCorrect = JSON.stringify(selected) === JSON.stringify(correct);
+
+            const feedbackDiv = document.getElementById(`feedback-${idx}`);
+            const block = document.getElementById(`qblock-${idx}`);
+            block.classList.remove('mistake');
+
+            if (isCorrect) {
+                correctCount++;
+                feedbackDiv.innerHTML = `<span style="color:#2e7d32;">✅ Верно</span>`;
+            } else {
+                wrongIndices.push(idx);
+                block.classList.add('mistake');
+                const correctText = item.correct.map(i => `"${item.options[i]}"`).join(', ');
+                feedbackDiv.innerHTML = `<span style="color:#c62828;">❌ Неверно. Правильный ответ: ${correctText}</span>`;
+            }
+        });
+
+        const resultDiv = document.getElementById('resultArea');
+        const statsDiv = document.getElementById('statsArea');
+        const percent = Math.round((correctCount / total) * 100);
+
+        resultDiv.style.display = 'block';
+        if (percent >= 50) {
+            resultDiv.className = 'result good';
+            resultDiv.innerHTML = `✅ ${correctCount} из ${total} (${percent}%) — <strong>ЗАЧЕТ!</strong> (порог 50%)`;
+        } else {
+            resultDiv.className = 'result bad';
+            resultDiv.innerHTML = `❌ ${correctCount} из ${total} (${percent}%) — <strong>НЕЗАЧЕТ.</strong> Нужно минимум ${Math.ceil(total*0.5)} правильных.`;
+        }
+
+        if (wrongIndices.length > 0) {
+            statsDiv.innerHTML = `<p><strong>⚠️ Ошиблись в вопросах:</strong> ${wrongIndices.map(i => i+1).join(', ')}</p><p style="font-size:14px; color:#888;">Подсказка: правильные ответы подсвечены зеленым под каждым вопросом.</p>`;
+        } else {
+            statsDiv.innerHTML = `<p>🎉 Идеально! Все вопросы отвечены верно!</p>`;
+        }
+
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function resetAll() {
+        shuffleAndRender();
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        document.querySelectorAll('.question-block').forEach(el => el.classList.remove('mistake'));
+        document.querySelectorAll('[id^="feedback-"]').forEach(el => el.innerHTML = '');
+    }
+
+    window.onload = shuffleAndRender;
+</script>
+</body>
+</html>
